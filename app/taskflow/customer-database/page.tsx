@@ -381,6 +381,44 @@ export default function AccountPage() {
   const [isFetching, setIsFetching] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
 
+  // Handle Firestore logging when audit dialog closes
+  useEffect(() => {
+    const handleAuditDialogClose = async () => {
+      if (!showAuditDialog && auditResult) {
+        // Dialog has closed, log the audit session to Firestore
+        try {
+          const sessionPayload: AuditSessionPayload = {
+            auditDate: new Date(),
+            userId: currentActor.uid || "unknown",
+            userName: currentActor.name || "Unknown User",
+            userEmail: currentActor.email || "unknown@example.com",
+            userReferenceId: currentActor.referenceId || "unknown",
+            auditType: "customer_database_audit",
+            totalIssues: auditResult.totalIssues,
+            duplicateCount: auditResult.duplicateCount,
+            missingTypeCount: auditResult.missingTypeCount,
+            missingStatusCount: auditResult.missingStatusCount,
+            issues: auditResult.issues,
+            duplicateDetails: Object.fromEntries(auditResult.duplicateDetails),
+            context: {
+              page: "Customer Database",
+              source: "audit_button",
+            },
+          };
+          await logAuditSession(sessionPayload);
+          // Clear audit result after logging
+          setAuditResult(null);
+        } catch (error) {
+          console.error("[AuditDialog] Failed to log audit session:", error);
+        }
+      }
+    };
+
+    if (!showAuditDialog && auditResult) {
+      handleAuditDialogClose();
+    }
+  }, [showAuditDialog, auditResult]);
+
   // ── TSA list — ALL TSAs including Terminated/Resigned ────────────────────
   const [tsaList, setTsaList] = useState<TsaOption[]>([]);
 
@@ -877,7 +915,7 @@ export default function AccountPage() {
     preTransferSnapshotRef.current = [];
   };
 
-  // ── Import audit callback ─────────────────────────────────────────────────
+  // ── Import audit callback ────────────────────────────────────────────���────
   const handleImportSuccess = async (
     count: number,
     tsaId: string,
@@ -1137,35 +1175,7 @@ export default function AccountPage() {
 
           <AuditDialog
             showAuditDialog={showAuditDialog}
-            setShowAuditDialogAction={async (open) => {
-              if (!open && auditResult && showAuditDialog) {
-                // Dialog is closing, log the audit session to Firestore
-                try {
-                  const sessionPayload: AuditSessionPayload = {
-                    auditDate: new Date(),
-                    userId: currentActor.uid || "unknown",
-                    userName: currentActor.name || "Unknown User",
-                    userEmail: currentActor.email || "unknown@example.com",
-                    userReferenceId: currentActor.referenceId || "unknown",
-                    auditType: "customer_database_audit",
-                    totalIssues: auditResult.totalIssues,
-                    duplicateCount: auditResult.duplicateCount,
-                    missingTypeCount: auditResult.missingTypeCount,
-                    missingStatusCount: auditResult.missingStatusCount,
-                    issues: auditResult.issues,
-                    duplicateDetails: Object.fromEntries(auditResult.duplicateDetails),
-                    context: {
-                      page: "Customer Database",
-                      source: "audit_button",
-                    },
-                  };
-                  await logAuditSession(sessionPayload);
-                } catch (error) {
-                  console.error("[AuditDialog] Failed to log audit session:", error);
-                }
-              }
-              setShowAuditDialog(open);
-            }}
+            setShowAuditDialogAction={setShowAuditDialog}
             audited={audited}
             duplicateIds={duplicateIds}
             auditSelection={auditSelection}

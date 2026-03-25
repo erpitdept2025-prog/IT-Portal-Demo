@@ -168,7 +168,7 @@ export function Audit<T extends { id: number; company_name?: string; contact_num
     setAuditedAction(issues)
     setDuplicateIdsAction(duplicates)
     setDuplicateDetailsAction?.(duplicateDetails)
-    setIsAuditViewAction(true)
+    // Pass the audit result to parent, which will handle showing the dialog
     onAuditComplete?.(auditResult)
   }
 

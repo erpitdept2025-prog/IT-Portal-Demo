@@ -152,9 +152,12 @@ export const AuditDialog: React.FC<AuditDialogProps> = ({
     }
   };
 
+  if (audited.length === 0 && duplicateIds.size === 0) {
+    return null;
+  }
+
   return (
-    (audited.length > 0 || duplicateIds.size > 0) && (
-      <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialogAction}>
+    <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialogAction}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">Audit Summary Report</DialogTitle>
@@ -418,6 +421,5 @@ export const AuditDialog: React.FC<AuditDialogProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    )
-  );
+    );
 };
