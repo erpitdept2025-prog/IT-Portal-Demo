@@ -369,6 +369,7 @@ export default function AccountPage() {
   const [audited, setAudited] = useState<Customer[]>([]);
   const [isAuditView, setIsAuditView] = useState(false);
   const [duplicateIds, setDuplicateIds] = useState<Set<number>>(new Set());
+  const [duplicateDetails, setDuplicateDetails] = useState<Map<number, { type: "within" | "across"; matchedWith: number[] }>>(new Map());
   const [auditFilter, setAuditFilter] = useState<
     "" | "all" | "missingType" | "missingStatus" | "duplicates"
   >("");
@@ -639,6 +640,7 @@ export default function AccountPage() {
     setIsAuditView(false);
     setAudited([]);
     setDuplicateIds(new Set());
+    setDuplicateDetails(new Map());
   };
 
   // ── TSA map (ReferenceID → display label) ────────────────────────────────
@@ -974,6 +976,7 @@ export default function AccountPage() {
                   setAuditedAction={setAudited}
                   setDuplicateIdsAction={setDuplicateIds}
                   setIsAuditViewAction={setIsAuditView}
+                  setDuplicateDetailsAction={setDuplicateDetails}
                 />
               ) : (
                 <Button variant="outline" onClick={handleReturn}>
@@ -1133,6 +1136,7 @@ export default function AccountPage() {
             toggleAuditSelectionAction={toggleAuditSelection}
             setAuditFilterAction={setAuditFilter}
             setCustomersAction={setCustomers}
+            duplicateDetails={duplicateDetails}
           />
 
           {/* ── Table ── */}

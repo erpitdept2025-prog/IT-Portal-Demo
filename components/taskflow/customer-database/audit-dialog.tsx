@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,16 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type AuditKey = "duplicates" | "missingType" | "missingStatus";
 type AuditFilter = "" | "all" | AuditKey;
+
+interface DuplicateDetail {
+  type: "within" | "across";
+  matchedWith: number[];
+}
 
 interface Customer {
   id: number;
@@ -44,7 +51,58 @@ interface AuditDialogProps {
   toggleAuditSelectionAction: (key: AuditKey) => void;
   setAuditFilterAction: React.Dispatch<React.SetStateAction<AuditFilter>>;
   setCustomersAction: React.Dispatch<React.SetStateAction<Customer[]>>;
+  duplicateDetails?: Map<number, DuplicateDetail>;
 }
+
+interface CollapsibleCardProps {
+  title: string;
+  badge: { count: number; color: string };
+  isChecked: boolean;
+  onCheckChange: () => void;
+  children: React.ReactNode;
+}
+
+const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
+  title,
+  badge,
+  isChecked,
+  onCheckChange,
+  children,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between gap-2 p-3 hover:bg-muted transition-colors"
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={onCheckChange}
+            onClick={(e) => e.stopPropagation()}
+            className="cursor-pointer"
+          />
+          <span className="font-medium text-sm">{title}</span>
+          <span className={cn("text-xs font-semibold px-2 py-1 rounded", badge.color)}>
+            {badge.count}
+          </span>
+        </div>
+        <ChevronDown
+          className={cn("h-4 w-4 transition-transform flex-shrink-0", {
+            "rotate-180": isExpanded,
+          })}
+        />
+      </button>
+
+      {isExpanded && <div className="max-h-48 overflow-y-auto border-t p-2 bg-muted/50 text-xs space-y-1">
+        {children}
+      </div>}
+    </div>
+  );
+};
 
 export const AuditDialog: React.FC<AuditDialogProps> = ({
   showAuditDialog,
@@ -55,30 +113,98 @@ export const AuditDialog: React.FC<AuditDialogProps> = ({
   toggleAuditSelectionAction,
   setAuditFilterAction,
   setCustomersAction,
+  duplicateDetails,
 }) => {
+  const missingTypeCount = audited.filter((c) => !c.type_client?.trim() && c.status?.trim()).length;
+  const missingStatusCount = audited.filter((c) => !c.status?.trim() && c.type_client?.trim()).length;
+
   return (
     (audited.length > 0 || duplicateIds.size > 0) && (
       <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialogAction}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Audit Summary Details</DialogTitle>
             <DialogDescription>
-              Here’s the breakdown of the audited data. You can select which issues to highlight:
+              Terminal-style console displaying detected issues. Check to include in audit filter:
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-2 mt-2 text-sm">
+          <div className="flex flex-col gap-3 mt-4">
             {duplicateIds.size > 0 && (
-              <label className="flex justify-between items-center gap-2">
-                <span>Duplicates:</span>
-                <div className="flex items-center gap-1">
-                  <span className="font-semibold text-red-600">{duplicateIds.size}</span>
-                  <input
-                    type="checkbox"
-                    checked={auditSelection.duplicates}
-                    onChange={() => toggleAuditSelectionAction("duplicates")}
-                  />
-                </div>
+              <CollapsibleCard
+                title="Duplicates"
+                badge={{ count: duplicateIds.size, color: "bg-red-100 text-red-700" }}
+                isChecked={auditSelection.duplicates}
+                onCheckChange={() => toggleAuditSelectionAction("duplicates")}
+              >
+                {Array.from(duplicateIds).map((id) => {
+                  const customer = audited.find((c) => c.id === id);
+                  const detail = duplicateDetails?.get(id);
+                  return (
+                    <div key={id} className="border-b last:border-0 pb-2 last:pb-0">
+                      <div className="font-mono text-xs text-foreground">
+                        <span className="text-cyan-600">[ID: {id}]</span> {customer?.company_name}
+                        {detail && (
+                          <span className={cn("ml-2", detail.type === "within" ? "text-orange-600" : "text-red-600")}>
+                            ({detail.type})
+                          </span>
+                        )}
+                      </div>
+                      {detail && (
+                        <div className="text-xs text-muted-foreground ml-2 mt-1">
+                          Matched with: {detail.matchedWith.join(", ")}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CollapsibleCard>
+            )}
+
+            {missingTypeCount > 0 && (
+              <CollapsibleCard
+                title="Missing Type"
+                badge={{ count: missingTypeCount, color: "bg-yellow-100 text-yellow-700" }}
+                isChecked={auditSelection.missingType}
+                onCheckChange={() => toggleAuditSelectionAction("missingType")}
+              >
+                {audited
+                  .filter((c) => !c.type_client?.trim() && c.status?.trim())
+                  .map((customer) => (
+                    <div key={customer.id} className="border-b last:border-0 pb-2 last:pb-0">
+                      <div className="font-mono text-xs text-foreground">
+                        <span className="text-cyan-600">[ID: {customer.id}]</span> {customer.company_name}
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-2 mt-1">
+                        Status: {customer.status}
+                      </div>
+                    </div>
+                  ))}
+              </CollapsibleCard>
+            )}
+
+            {missingStatusCount > 0 && (
+              <CollapsibleCard
+                title="Missing Status"
+                badge={{ count: missingStatusCount, color: "bg-yellow-100 text-yellow-700" }}
+                isChecked={auditSelection.missingStatus}
+                onCheckChange={() => toggleAuditSelectionAction("missingStatus")}
+              >
+                {audited
+                  .filter((c) => !c.status?.trim() && c.type_client?.trim())
+                  .map((customer) => (
+                    <div key={customer.id} className="border-b last:border-0 pb-2 last:pb-0">
+                      <div className="font-mono text-xs text-foreground">
+                        <span className="text-cyan-600">[ID: {customer.id}]</span> {customer.company_name}
+                      </div>
+                      <div className="text-xs text-muted-foreground ml-2 mt-1">
+                        Type: {customer.type_client}
+                      </div>
+                    </div>
+                  ))}
+              </CollapsibleCard>
+            )}
+          </div>
               </label>
             )}
             {audited.some((c) => !c.type_client?.trim() && c.status?.trim()) && (
