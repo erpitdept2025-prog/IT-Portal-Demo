@@ -381,6 +381,21 @@ export default function AccountPage() {
   const [isFetching, setIsFetching] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
 
+  // ── TSA list — ALL TSAs including Terminated/Resigned ────────────────────
+  const [tsaList, setTsaList] = useState<TsaOption[]>([]);
+
+  const [filterTSA, setFilterTSA] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedIds, setSelectedIdsAction] = useState<Set<number>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
+  const [auditSelection, setAuditSelection] = useState<
+    Record<AuditKey, boolean>
+  >({ duplicates: false, missingType: false, missingStatus: false });
+
   // Handle Firestore logging when audit dialog closes
   useEffect(() => {
     const handleAuditDialogClose = async () => {
@@ -418,21 +433,6 @@ export default function AccountPage() {
       handleAuditDialogClose();
     }
   }, [showAuditDialog, auditResult]);
-
-  // ── TSA list — ALL TSAs including Terminated/Resigned ────────────────────
-  const [tsaList, setTsaList] = useState<TsaOption[]>([]);
-
-  const [filterTSA, setFilterTSA] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedIds, setSelectedIdsAction] = useState<Set<number>>(new Set());
-  const [selectAll, setSelectAll] = useState(false);
-
-  const [showAuditDialog, setShowAuditDialog] = useState(false);
-  const [auditSelection, setAuditSelection] = useState<
-    Record<AuditKey, boolean>
-  >({ duplicates: false, missingType: false, missingStatus: false });
 
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -694,7 +694,7 @@ export default function AccountPage() {
     return map;
   }, [tsaList]);
 
-  // ── Bulk delete ───────────────────────────────────────────────────────────
+  // ── Bulk delete ─────────────────────────────────────────────���─────────────
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return toast.error("No customers selected.");
     setShowDeleteDialog(true);
