@@ -10,12 +10,23 @@ interface DuplicateDetail {
   matchedWith: number[]
 }
 
+export interface AuditResult {
+  issues: any[]
+  duplicates: Set<number>
+  duplicateDetails: Map<number, DuplicateDetail>
+  missingTypeCount: number
+  missingStatusCount: number
+  duplicateCount: number
+  totalIssues: number
+}
+
 interface AuditProps<T> {
   customers: T[]
   setAuditedAction: React.Dispatch<React.SetStateAction<T[]>>
   setDuplicateIdsAction: React.Dispatch<React.SetStateAction<Set<number>>>
   setIsAuditViewAction: React.Dispatch<React.SetStateAction<boolean>>
   setDuplicateDetailsAction?: React.Dispatch<React.SetStateAction<Map<number, DuplicateDetail>>>
+  onAuditComplete?: (result: AuditResult) => void
 }
 
 /**
@@ -28,6 +39,7 @@ export function Audit<T extends { id: number; company_name?: string; contact_num
   setDuplicateIdsAction,
   setIsAuditViewAction,
   setDuplicateDetailsAction,
+  onAuditComplete,
 }: AuditProps<T>) {
   const handleAudit = () => {
     // Terminal-style console output
@@ -126,6 +138,9 @@ export function Audit<T extends { id: number; company_name?: string; contact_num
       (c) => !c.type_client?.trim() || !c.status?.trim() || duplicates.has(c.id)
     )
 
+    const missingTypeCount = customers.filter((c) => !c.type_client?.trim()).length
+    const missingStatusCount = customers.filter((c) => !c.status?.trim()).length
+
     console.log(
       `%c[AUDIT] Summary: ${withinDuplicateCount} within-TSA duplicates, ${acrossDuplicateCount} across-TSA duplicates, ${issues.length} total issues`,
       "color: #00ff00; font-weight: bold; font-family: monospace"
@@ -140,10 +155,21 @@ export function Audit<T extends { id: number; company_name?: string; contact_num
       toast.success("Audit completed successfully!")
     }, 800)
 
+    const auditResult: AuditResult = {
+      issues,
+      duplicates,
+      duplicateDetails,
+      missingTypeCount,
+      missingStatusCount,
+      duplicateCount: duplicates.size,
+      totalIssues: issues.length,
+    }
+
     setAuditedAction(issues)
     setDuplicateIdsAction(duplicates)
     setDuplicateDetailsAction?.(duplicateDetails)
     setIsAuditViewAction(true)
+    onAuditComplete?.(auditResult)
   }
 
   return (

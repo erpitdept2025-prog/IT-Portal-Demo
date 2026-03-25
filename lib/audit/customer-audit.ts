@@ -44,6 +44,32 @@ export interface CustomerAuditPayload {
 }
 
 const COLLECTION = "taskflow_customer_audit_logs";
+const AUDIT_SESSIONS_COLLECTION = "audit_sessions";
+
+export interface DuplicateDetail {
+  type: "within" | "across";
+  matchedWith: number[];
+}
+
+export interface AuditSessionPayload {
+  auditDate: any;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userReferenceId: string;
+  auditType: "customer_database_audit";
+  totalIssues: number;
+  duplicateCount: number;
+  missingTypeCount: number;
+  missingStatusCount: number;
+  issues: any[];
+  duplicateDetails: Record<number, DuplicateDetail>;
+  context: {
+    page: string;
+    source?: string;
+    bulk?: boolean;
+  };
+}
 
 export async function logCustomerAudit(
   payload: CustomerAuditPayload,
@@ -60,5 +86,36 @@ export async function logCustomerAudit(
     });
   } catch (err) {
     console.error("[CustomerAudit] Failed to write log:", err);
+  }
+}
+
+/**
+ * Logs a complete audit session to Firestore for permanent record and review
+ */
+export async function logAuditSession(
+  payload: AuditSessionPayload,
+): Promise<string | null> {
+  try {
+    const docRef = await addDoc(collection(db, AUDIT_SESSIONS_COLLECTION), {
+      auditDate: payload.auditDate ?? serverTimestamp(),
+      userId: payload.userId,
+      userName: payload.userName,
+      userEmail: payload.userEmail,
+      userReferenceId: payload.userReferenceId,
+      auditType: payload.auditType,
+      totalIssues: payload.totalIssues,
+      duplicateCount: payload.duplicateCount,
+      missingTypeCount: payload.missingTypeCount,
+      missingStatusCount: payload.missingStatusCount,
+      issues: payload.issues ?? [],
+      duplicateDetails: payload.duplicateDetails ?? {},
+      context: payload.context,
+      timestamp: serverTimestamp(),
+    });
+    console.log("[AuditSession] Successfully logged audit session:", docRef.id);
+    return docRef.id;
+  } catch (err) {
+    console.error("[AuditSession] Failed to log audit session:", err);
+    return null;
   }
 }

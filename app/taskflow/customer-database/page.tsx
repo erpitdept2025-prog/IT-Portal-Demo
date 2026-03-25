@@ -63,10 +63,13 @@ import {
 // ─── Audit logger ─────────────────────────────────────────────────────────────
 import {
   logCustomerAudit,
+  logAuditSession,
   type AuditActor,
   type TransferDetail,
+  type AuditSessionPayload,
 } from "@/lib/audit/customer-audit";
 import type { TransferSuccessPayload } from "@/components/taskflow/customer-database/transfer";
+import type { AuditResult } from "@/components/taskflow/customer-database/audit";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -373,6 +376,7 @@ export default function AccountPage() {
   const [auditFilter, setAuditFilter] = useState<
     "" | "all" | "missingType" | "missingStatus" | "duplicates"
   >("");
+  const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -890,7 +894,7 @@ export default function AccountPage() {
     });
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // ─── Render ────────────────────────────────────���──────────────────────────
   return (
     <ProtectedPageWrapper>
       <SidebarProvider>
@@ -970,14 +974,18 @@ export default function AccountPage() {
                 </>
               )}
 
-              {!isAuditView ? (
-                <Audit
-                  customers={customers}
-                  setAuditedAction={setAudited}
-                  setDuplicateIdsAction={setDuplicateIds}
-                  setIsAuditViewAction={setIsAuditView}
-                  setDuplicateDetailsAction={setDuplicateDetails}
-                />
+  {!isAuditView ? (
+        <Audit
+          customers={customers}
+          setAuditedAction={setAudited}
+          setDuplicateIdsAction={setDuplicateIds}
+          setIsAuditViewAction={setIsAuditView}
+          setDuplicateDetailsAction={setDuplicateDetails}
+          onAuditComplete={(result) => {
+            setAuditResult(result);
+            setShowAuditDialog(true);
+          }}
+        />
               ) : (
                 <Button variant="outline" onClick={handleReturn}>
                   Return to List
@@ -1129,7 +1137,35 @@ export default function AccountPage() {
 
           <AuditDialog
             showAuditDialog={showAuditDialog}
-            setShowAuditDialogAction={setShowAuditDialog}
+            setShowAuditDialogAction={async (open) => {
+              if (!open && auditResult && showAuditDialog) {
+                // Dialog is closing, log the audit session to Firestore
+                try {
+                  const sessionPayload: AuditSessionPayload = {
+                    auditDate: new Date(),
+                    userId: currentActor.uid || "unknown",
+                    userName: currentActor.name || "Unknown User",
+                    userEmail: currentActor.email || "unknown@example.com",
+                    userReferenceId: currentActor.referenceId || "unknown",
+                    auditType: "customer_database_audit",
+                    totalIssues: auditResult.totalIssues,
+                    duplicateCount: auditResult.duplicateCount,
+                    missingTypeCount: auditResult.missingTypeCount,
+                    missingStatusCount: auditResult.missingStatusCount,
+                    issues: auditResult.issues,
+                    duplicateDetails: Object.fromEntries(auditResult.duplicateDetails),
+                    context: {
+                      page: "Customer Database",
+                      source: "audit_button",
+                    },
+                  };
+                  await logAuditSession(sessionPayload);
+                } catch (error) {
+                  console.error("[AuditDialog] Failed to log audit session:", error);
+                }
+              }
+              setShowAuditDialog(open);
+            }}
             audited={audited}
             duplicateIds={duplicateIds}
             auditSelection={auditSelection}
@@ -1137,6 +1173,10 @@ export default function AccountPage() {
             setAuditFilterAction={setAuditFilter}
             setCustomersAction={setCustomers}
             duplicateDetails={duplicateDetails}
+            userId={currentActor.uid || undefined}
+            userName={currentActor.name || undefined}
+            userEmail={currentActor.email || undefined}
+            userReferenceId={currentActor.referenceId || undefined}
           />
 
           {/* ── Table ── */}
