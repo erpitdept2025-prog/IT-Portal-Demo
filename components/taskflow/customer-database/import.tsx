@@ -22,13 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import * as ExcelJS from "exceljs";
 import { toast } from "sonner";
 import { Upload as UploadIcon, Download as DownloadIcon } from "lucide-react";
@@ -171,11 +165,33 @@ export function ImportDialog({ onSuccessAction }: ImportDialogProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+    processFile(selectedFile);
+  };
+
+  const processFile = (selectedFile: File) => {
+    if (!selectedFile.name.endsWith(".xlsx") && !selectedFile.name.endsWith(".xls")) {
+      toast.error("Please select a valid Excel file (.xlsx or .xls)");
+      return;
+    }
     setFile(selectedFile);
     setOriginalFileName(selectedFile.name.replace(/\.[^/.]+$/, ""));
     parseExcel(selectedFile)
       .then(setPreviewData)
       .catch(() => toast.error("Failed to parse Excel file."));
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles.length > 0) {
+      processFile(droppedFiles[0]);
+    }
   };
 
   const handleUpload = async () => {
@@ -315,74 +331,76 @@ export function ImportDialog({ onSuccessAction }: ImportDialogProps) {
         </DialogHeader>
 
         <div className="grid gap-4">
-          <div className="flex gap-2">
-            <Select
-              value={selectedManager?.value || ""}
-              onValueChange={(v) => {
-                const manager =
-                  managerOptions.find((m) => m.value === v) || null;
-                setSelectedManager(manager);
-                setSelectedTSM(null);
-                setSelectedTSA(null);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Manager" />
-              </SelectTrigger>
-              <SelectContent>
-                {managerOptions.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm">Manager</Label>
+              <Combobox
+                options={managerOptions}
+                value={selectedManager?.value || ""}
+                onValueChange={(v) => {
+                  const manager =
+                    managerOptions.find((m) => m.value === v) || null;
+                  setSelectedManager(manager);
+                  setSelectedTSM(null);
+                  setSelectedTSA(null);
+                }}
+                placeholder="Select Manager"
+              />
+            </div>
 
-            <Select
-              value={selectedTSM?.value || ""}
-              disabled={!selectedManager}
-              onValueChange={(v) => {
-                const tsm = tsmOptions.find((t) => t.value === v) || null;
-                setSelectedTSM(tsm);
-                setSelectedTSA(null);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select TSM" />
-              </SelectTrigger>
-              <SelectContent>
-                {tsmOptions.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm">TSM</Label>
+              <Combobox
+                options={tsmOptions}
+                value={selectedTSM?.value || ""}
+                onValueChange={(v) => {
+                  const tsm = tsmOptions.find((t) => t.value === v) || null;
+                  setSelectedTSM(tsm);
+                  setSelectedTSA(null);
+                }}
+                placeholder="Select TSM"
+                disabled={!selectedManager}
+              />
+            </div>
 
-            <Select
-              value={selectedTSA?.value || ""}
-              disabled={!selectedManager}
-              onValueChange={(v) => {
-                const tsa = tsaOptions.find((t) => t.value === v) || null;
-                setSelectedTSA(tsa);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select TSA" />
-              </SelectTrigger>
-              <SelectContent>
-                {tsaOptions.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm">TSA</Label>
+              <Combobox
+                options={tsaOptions}
+                value={selectedTSA?.value || ""}
+                onValueChange={(v) => {
+                  const tsa = tsaOptions.find((t) => t.value === v) || null;
+                  setSelectedTSA(tsa);
+                }}
+                placeholder="Select TSA"
+                disabled={!selectedManager}
+              />
+            </div>
           </div>
 
           <div className="grid gap-2">
             <Label>Excel File</Label>
-            <Input type="file" onChange={handleFileChange} />
+            <div
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors"
+            >
+              <Input
+                type="file"
+                onChange={handleFileChange}
+                accept=".xlsx,.xls"
+                className="hidden"
+                id="file-upload"
+              />
+              <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                <UploadIcon className="w-8 h-8 text-muted-foreground" />
+                <div className="text-sm">
+                  <span className="font-medium">Drag and drop</span> your Excel file here, or{" "}
+                  <span className="underline">click to browse</span>
+                </div>
+                <p className="text-xs text-muted-foreground">Supported: .xlsx, .xls</p>
+              </label>
+            </div>
           </div>
 
           {previewData.length > 0 && (
