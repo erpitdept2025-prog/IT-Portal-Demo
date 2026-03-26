@@ -20,12 +20,28 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IT Portal ERP System",
-  description: "Developed by IT Team and Leroux Y Xchire",
+  title: "KINETIC - IT Portal ERP System",
+  description: "Precision Audit Interface for the Observatory Network",
   icons: {
     icon: "/xchire-logo.png",
     shortcut: "/xchire-logo.png",
     apple: "/xchire-logo.png",
+  },
+  manifest: "/manifest.json",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+    viewportFit: "cover",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "KINETIC",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 

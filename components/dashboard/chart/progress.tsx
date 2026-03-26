@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { motion } from "framer-motion";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -10,34 +11,24 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/components/custom-ui/Card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group";
+import { chartVariants } from "@/components/animations/dashboard";
 
 interface ProgressRecord {
   id: string;
   referenceid: string;
-  date_created: string; // ISO date string
+  date_created: string;
 }
 
 interface ActivityRecord {
   id: string;
-  date_created: string; // ISO date string
+  date_created: string;
 }
 
 const chartConfig = {
@@ -51,7 +42,6 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-// Helper to count unique IDs per day
 function countDistinctIdsByDate<T>(
   records: T[],
   getDate: (r: T) => string,
@@ -84,7 +74,6 @@ export function ChartAreaInteractive() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Detect dark mode by observing class on <html>
   const [isDark, setIsDark] = React.useState(false);
 
   React.useEffect(() => {
@@ -94,7 +83,6 @@ export function ChartAreaInteractive() {
     });
     observer.observe(htmlEl, { attributes: true, attributeFilter: ["class"] });
 
-    // Initial check
     setIsDark(htmlEl.classList.contains("dark"));
 
     return () => observer.disconnect();
@@ -136,19 +124,16 @@ export function ChartAreaInteractive() {
     fetchData();
   }, []);
 
-  // Utility to get CSS variable value (H S L components)
   const getCssVar = (name: string) =>
     typeof window !== "undefined"
       ? getComputedStyle(document.documentElement).getPropertyValue(name).trim()
       : "";
 
-  // Convert CSS variable components to hsl(...) string or fallback
   const getCssVarHsl = (name: string, fallback: string) => {
     const val = getCssVar(name);
     return val ? `hsl(${val})` : fallback;
   };
 
-  // Memoize colors so they update on dark mode toggle
   const chartColors = React.useMemo(
     () => ({
       axisLine: getCssVarHsl("--chart-axis-line", isDark ? "#ddd" : "#666"),
@@ -163,7 +148,6 @@ export function ChartAreaInteractive() {
     [isDark]
   );
 
-  // Count unique IDs per day
   const progressCountByDate = countDistinctIdsByDate(
     progressRecords,
     (r) => r.date_created,
@@ -176,14 +160,12 @@ export function ChartAreaInteractive() {
     (r) => r.id
   );
 
-  // Combine all dates found in either dataset to form full timeline
   const allDatesSet = new Set<string>([
     ...Object.keys(progressCountByDate),
     ...Object.keys(activityCountByDate),
   ]);
   const allDates = Array.from(allDatesSet).sort();
 
-  // Filter by timeRange
   const referenceDate = new Date(allDates[allDates.length - 1] || new Date().toISOString());
   let daysToSubtract = 90;
   if (timeRange === "30d") daysToSubtract = 30;
@@ -192,13 +174,11 @@ export function ChartAreaInteractive() {
   const startDate = new Date(referenceDate);
   startDate.setDate(referenceDate.getDate() - daysToSubtract);
 
-  // Filter dates in range
   const filteredDates = allDates.filter((dateStr) => {
     const d = new Date(dateStr);
     return d >= startDate && d <= referenceDate;
   });
 
-  // Prepare chart data array
   const filteredData = filteredDates.map((dateStr) => ({
     date: dateStr,
     progress: progressCountByDate[dateStr] || 0,
@@ -206,114 +186,118 @@ export function ChartAreaInteractive() {
   }));
 
   if (loading) {
-    return <div className="p-4 text-center">Loading chart data...</div>;
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64">
+          <motion.div
+            className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+        </CardContent>
+      </Card>
+    );
   }
 
   if (error) {
-    return <div className="p-4 text-center text-red-600">Error: {error}</div>;
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64">
+          <p className="text-red-400">Error: {error}</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <Card className="@container/card" style={{ backgroundColor: chartColors.background }}>
-      <CardHeader>
-        <CardTitle>Taskflow Progress & Activity</CardTitle>
-        <CardDescription>
-          <span className="hidden @[540px]/card:block">
-            Combined Progress and Activity counts (Unique IDs)
-          </span>
-          <span className="@[540px]/card:hidden">Combined counts</span>
-        </CardDescription>
-        <ToggleGroup
-          type="single"
-          value={timeRange}
-          onValueChange={setTimeRange}
-          variant="outline"
-          className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
-        >
-          <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-          <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-          <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
-        </ToggleGroup>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger
-            className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
-            aria-label="Select a value"
-          >
-            <SelectValue placeholder="Last 3 months" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="90d" className="rounded-lg">
-              Last 3 months
-            </SelectItem>
-            <SelectItem value="30d" className="rounded-lg">
-              Last 30 days
-            </SelectItem>
-            <SelectItem value="7d" className="rounded-lg">
-              Last 7 days
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
-          <AreaChart data={filteredData}>
-            <defs>
-              <linearGradient id="fillProgress" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={chartColors.progressColor} stopOpacity={1.0} />
-                <stop offset="95%" stopColor={chartColors.progressColor} stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient id="fillActivity" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={chartColors.activityColor} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={chartColors.activityColor} stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} stroke={chartColors.gridLine} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              stroke={chartColors.axisLine}
-              tickMargin={8}
-              minTickGap={32}
-              tick={{ fill: chartColors.tickColor }}
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-              }}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) =>
-                    new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                  }
-                  indicator="dot"
-                  style={{
-                    backgroundColor: chartColors.tooltipBg,
-                    color: chartColors.tooltipColor,
-                    borderRadius: "8px",
-                    padding: "8px",
+    <motion.div variants={chartVariants} initial="hidden" animate="visible">
+      <Card className="border border-slate-700/50 bg-slate-800/40 backdrop-blur-xl">
+        <CardHeader>
+          <CardTitle className="text-white">Network Velocity</CardTitle>
+          <CardDescription className="text-slate-400">
+            Progress and Activity Overview
+          </CardDescription>
+          <div className="flex gap-2 mt-4">
+            {["7d", "30d", "90d"].map((range) => (
+              <motion.button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  timeRange === range
+                    ? "bg-cyan-500 text-slate-900"
+                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {range === "7d" ? "1W" : range === "30d" ? "1M" : "3M"}
+              </motion.button>
+            ))}
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}>
+            <ChartContainer config={chartConfig} className="aspect-auto h-[300px] w-full">
+              <AreaChart data={filteredData}>
+                <defs>
+                  <linearGradient id="fillProgress" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColors.progressColor} stopOpacity={1.0} />
+                    <stop offset="95%" stopColor={chartColors.progressColor} stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="fillActivity" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColors.activityColor} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={chartColors.activityColor} stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke={chartColors.gridLine} strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  stroke={chartColors.axisLine}
+                  tickMargin={8}
+                  minTickGap={32}
+                  tick={{ fill: chartColors.tickColor }}
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                   }}
                 />
-              }
-            />
-            <Area
-              dataKey="progress"
-              type="natural"
-              fill="url(#fillProgress)"
-              stroke={chartColors.progressColor}
-              stackId="a"
-            />
-            <Area
-              dataKey="activity"
-              type="natural"
-              fill="url(#fillActivity)"
-              stroke={chartColors.activityColor}
-              stackId="a"
-            />
-          </AreaChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent
+                      labelFormatter={(value) =>
+                        new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                      }
+                      indicator="dot"
+                      style={{
+                        backgroundColor: chartColors.tooltipBg,
+                        color: chartColors.tooltipColor,
+                        borderRadius: "8px",
+                        padding: "8px",
+                      }}
+                    />
+                  }
+                />
+                <Area
+                  dataKey="progress"
+                  type="natural"
+                  fill="url(#fillProgress)"
+                  stroke={chartColors.progressColor}
+                  stackId="a"
+                />
+                <Area
+                  dataKey="activity"
+                  type="natural"
+                  fill="url(#fillActivity)"
+                  stroke={chartColors.activityColor}
+                  stackId="a"
+                />
+              </AreaChart>
+            </ChartContainer>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
