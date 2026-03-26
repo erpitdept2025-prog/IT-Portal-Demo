@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { SidebarProvider, SidebarInset, SidebarTrigger, } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger, } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator, } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
@@ -12,9 +12,6 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { Card, CardContent, CardHeader, CardTitle, } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-
-import { UserProvider } from "@/contexts/UserContext";
-import { FormatProvider } from "@/contexts/FormatContext";
 import ProtectedPageWrapper from "@/components/protected-page-wrapper";
 import { Pagination } from "@/components/app-pagination";
 import { Star, ExternalLink } from "lucide-react";
@@ -260,11 +257,8 @@ export default function AccountPage() {
   const generatePages = (total: number) => Array.from({ length: total }, (_, i) => i + 1);
 
   return (
-    <UserProvider>
-      <FormatProvider>
-        <ProtectedPageWrapper>
-          <SidebarProvider>
-            <AppSidebar />
+    <ProtectedPageWrapper>
+      <AppSidebar />
             <SidebarInset>
               {/* Header */}
               <header className="flex h-16 shrink-0 items-center gap-2 px-4">
@@ -392,10 +386,7 @@ export default function AccountPage() {
                 </Card>
               </div>
 
-            </SidebarInset>
-          </SidebarProvider>
-        </ProtectedPageWrapper>
-      </FormatProvider>
-    </UserProvider>
+      </SidebarInset>
+    </ProtectedPageWrapper>
   );
 }
