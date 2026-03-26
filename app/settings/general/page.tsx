@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 
-import { UserProvider, useUser } from "@/contexts/UserContext";
-import { FormatProvider, useFormat } from "@/contexts/FormatContext";
+import { useUser } from "@/contexts/UserContext";
+import { useFormat } from "@/contexts/FormatContext";
 
 import { AppSidebar } from "@/components/app-sidebar";
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger, } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger, } from "@/components/ui/sidebar";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -23,19 +22,10 @@ import { toast } from "sonner";
 import ProtectedPageWrapper from "@/components/protected-page-wrapper";
 
 function SettingsContent() {
-  const searchParams = useSearchParams();
-  const { userId, setUserId } = useUser();
+  const { userId } = useUser();
 
-  // Get userId from URL query param and sync to context
-  const queryUserId = searchParams?.get("id") ?? "";
   const [dateCreatedFilterRange, setDateCreatedFilterRangeAction] =
     useState<DateRange | undefined>(undefined);
-
-  useEffect(() => {
-    if (queryUserId && queryUserId !== userId) {
-      setUserId(queryUserId);
-    }
-  }, [queryUserId, userId, setUserId]);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -161,14 +151,8 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <UserProvider>
-      <FormatProvider>
-        <SidebarProvider>
-          <Suspense fallback={<div>Loading...</div>}>
-            <SettingsContent />
-          </Suspense>
-        </SidebarProvider>
-      </FormatProvider>
-    </UserProvider>
+    <Suspense fallback={<div>Loading...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { useRouter } from "next/navigation";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { toast } from "sonner";
 import { Loader2, Search, Edit as EditIcon, Filter } from "lucide-react";
@@ -207,7 +207,7 @@ export default function ActivityLogsPage() {
     };
 
     return (
-        <SidebarProvider>
+        <ProtectedPageWrapper>
             <AppSidebar />
             <SidebarInset>
                 {/* Header */}
@@ -405,6 +405,6 @@ export default function ActivityLogsPage() {
                 />
 
             </SidebarInset>
-        </SidebarProvider>
+        </ProtectedPageWrapper>
     );
 }

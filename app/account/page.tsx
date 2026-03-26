@@ -1,9 +1,8 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, Suspense } from "react"
 import { useRouter } from "next/navigation"
-import { useSearchParams } from "next/navigation"
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
     Breadcrumb,
@@ -36,9 +35,14 @@ interface UserDetails {
     profilePicture: string
 }
 
-export default function AccountPage() {
-    const searchParams = useSearchParams()
-    const queryUserId = searchParams?.get("userId")
+function AccountContent() {
+    const [queryUserId, setQueryUserId] = useState<string | null>(null)
+
+    useEffect(() => {
+        // Use router query or localStorage instead of useSearchParams
+        const storedId = localStorage.getItem("userId")
+        setQueryUserId(storedId)
+    }, [])
     const [userId, setUserId] = useState<string | null>(queryUserId ?? null)
     const [user, setUser] = useState<UserDetails | null>(null)
     const [loading, setLoading] = useState(false)
@@ -167,9 +171,9 @@ export default function AccountPage() {
     if (!user) return <p className="p-8">Loading user data...</p>
 
     return (
-        <SidebarProvider>
+        <>
             <AppSidebar />
-            <SidebarInset>
+            <SidebarInset> 
 
                 <header className="flex h-16 shrink-0 items-center gap-2">
                     <div className="flex items-center gap-2 px-4">
@@ -335,6 +339,14 @@ export default function AccountPage() {
                     </div>
                 </div>
             </SidebarInset>
-        </SidebarProvider>
+        </>
+    )
+}
+
+export default function AccountPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AccountContent />
+        </Suspense>
     )
 }
