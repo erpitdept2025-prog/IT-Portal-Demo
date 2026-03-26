@@ -1,8 +1,8 @@
 "use client"
 
 import React, { useEffect, useState, useMemo } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Pagination } from "@/components/app-pagination"
 import { Calendar } from "@/components/taskflow/customer-database/calendar";
@@ -388,9 +388,8 @@ export default function AccountPage() {
 
     return (
         <ProtectedPageWrapper>
-            <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
+            <AppSidebar />
+            <SidebarInset>
                     {/* Header */}
                     <header className="flex h-16 shrink-0 items-center gap-2 px-4">
                         <SidebarTrigger className="-ml-1" />
@@ -708,8 +707,7 @@ export default function AccountPage() {
                         />
                     </div>
 
-                </SidebarInset>
-            </SidebarProvider>
+            </SidebarInset>
         </ProtectedPageWrapper>
     )
 }

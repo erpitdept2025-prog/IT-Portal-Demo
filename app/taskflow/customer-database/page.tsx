@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
-  SidebarProvider,
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
@@ -890,12 +889,11 @@ export default function AccountPage() {
     });
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // ─── Render ────────────────────────────────────���──────────────────────────
   return (
     <ProtectedPageWrapper>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
+      <AppSidebar />
+      <SidebarInset>
           <header className="flex h-16 shrink-0 items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Button
@@ -1340,8 +1338,7 @@ export default function AccountPage() {
               onPageChangeAction={setPage}
             />
           </div>
-        </SidebarInset>
-      </SidebarProvider>
+      </SidebarInset>
     </ProtectedPageWrapper>
   );
 }

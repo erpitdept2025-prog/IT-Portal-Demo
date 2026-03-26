@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy, deleteDoc, doc, Timestamp, } from "firebase/firestore";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Pagination } from "@/components/app-pagination";
 import { toast } from "sonner";
@@ -265,7 +265,7 @@ export default function AccountPage() {
   };
 
   return (
-    <SidebarProvider>
+    <>
       <AppSidebar />
       <SidebarInset>
         {/* Header & Breadcrumb */}
@@ -403,6 +403,6 @@ export default function AccountPage() {
           <Pagination page={page} totalPages={totalPages} onPageChangeAction={setPage} />
         </div>
       </SidebarInset>
-    </SidebarProvider>
+    </>
   );
 }

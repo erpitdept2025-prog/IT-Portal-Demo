@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { SidebarProvider, SidebarInset, SidebarTrigger, } from "@/components/ui/sidebar";
+import { useRouter } from "next/navigation";
+import { SidebarInset, SidebarTrigger, } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Pagination } from "@/components/app-pagination";
 import { toast } from "sonner";
@@ -126,9 +126,8 @@ export default function DNSRecordsPage() {
 
     return (
     <ProtectedPageWrapper>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
+      <AppSidebar />
+      <SidebarInset>
           {/* Header & Breadcrumb */}
           <header className="flex h-16 items-center gap-2 px-4 border-b border-border">
             <SidebarTrigger className="-ml-1" />
@@ -246,8 +245,7 @@ export default function DNSRecordsPage() {
           <div className="flex justify-center items-center gap-4 my-4">
             <Pagination page={page} totalPages={totalPages} onPageChangeAction={setPage} />
           </div>
-        </SidebarInset>
-      </SidebarProvider>
+      </SidebarInset>
     </ProtectedPageWrapper>
   );
 }

@@ -45,7 +45,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
-  SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
@@ -252,7 +251,7 @@ function avatarColor(str: string | null | undefined): string {
   return palette[hash % palette.length];
 }
 
-// ─── Transfer pill ─────────────────────────────────────────────────────────────
+// ─── Transfer pill ──────────────────────────────────────────────────────��──────
 
 function TransferPill({ log }: { log: UnifiedLog }) {
   // Unified view of transfer data across both sources
@@ -599,9 +598,8 @@ export default function CustomerAuditLogsPage() {
   return (
     <ProtectedPageWrapper>
       <TooltipProvider delayDuration={0}>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
+        <AppSidebar />
+        <SidebarInset>
             {/* Header */}
             <header className="flex h-16 shrink-0 items-center gap-2 px-4">
               <SidebarTrigger className="-ml-1" />
@@ -1102,8 +1100,7 @@ export default function CustomerAuditLogsPage() {
                 </CardContent>
               </Card>
             </main>
-          </SidebarInset>
-        </SidebarProvider>
+        </SidebarInset>
 
         {/* ── Detail dialog ────────────────────────────────────────────────── */}
         {selectedLog && (
