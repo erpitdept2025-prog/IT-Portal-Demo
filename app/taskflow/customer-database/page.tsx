@@ -9,7 +9,10 @@ import {
 import { AppSidebar } from "@/components/app-sidebar";
 import { Pagination } from "@/components/app-pagination";
 import { Download } from "@/components/taskflow/customer-database/download";
-import { Audit } from "@/components/taskflow/customer-database/audit";
+import { Audit } from "@/components/taskflow/customer-database/audit"
+import { AuditTable } from "@/components/taskflow/customer-database/audit-table"
+import { AuditDetailModal } from "@/components/taskflow/customer-database/audit-detail-modal"
+import { AuditRemarksDialog } from "@/components/taskflow/customer-database/audit-remarks-dialog";
 import { Calendar } from "@/components/taskflow/customer-database/calendar";
 import { ImportDialog } from "@/components/taskflow/customer-database/import";
 import { AuditDialog } from "@/components/taskflow/customer-database/audit-dialog";
@@ -367,6 +370,11 @@ export default function AccountPage() {
 
   const [audited, setAudited] = useState<Customer[]>([]);
   const [isAuditView, setIsAuditView] = useState(false);
+  const [selectedAuditIssue, setSelectedAuditIssue] = useState<typeof audited[0] | null>(null);
+  const [showAuditDetailModal, setShowAuditDetailModal] = useState(false);
+  const [showRemarksDialog, setShowRemarksDialog] = useState(false);
+  const [auditAction, setAuditAction] = useState<"approve" | "reject" | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [duplicateIds, setDuplicateIds] = useState<Set<number>>(new Set());
   const [duplicateDetails, setDuplicateDetails] = useState<Map<number, { type: "within" | "across"; matchedWith: number[] }>>(new Map());
   const [auditFilter, setAuditFilter] = useState<
@@ -651,6 +659,56 @@ export default function AccountPage() {
     return map;
   }, [tsaList]);
 
+  // ── Audit handlers ────────────────────────────────────────────────────────
+  const handleAuditRowClick = (issue: typeof audited[0]) => {
+    setSelectedAuditIssue(issue);
+    setShowAuditDetailModal(true);
+  };
+
+  const handleAuditApprove = async (status: string, remarks: string) => {
+    if (!selectedAuditIssue) return;
+    
+    setAuditLoading(true);
+    try {
+      // Simulate update - replace with actual API call
+      toast.success(`Audit issue approved with status: ${status}`);
+      
+      // Remove from audited list
+      const updatedAudited = audited.filter(a => a.id !== selectedAuditIssue.id);
+      setAudited(updatedAudited);
+      
+      setShowAuditDetailModal(false);
+      setShowRemarksDialog(false);
+      setSelectedAuditIssue(null);
+    } catch (error) {
+      toast.error("Failed to approve audit issue");
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
+  const handleAuditReject = async (status: string, remarks: string) => {
+    if (!selectedAuditIssue) return;
+    
+    setAuditLoading(true);
+    try {
+      // Simulate update - replace with actual API call
+      toast.success("Audit issue rejected");
+      
+      // Remove from audited list
+      const updatedAudited = audited.filter(a => a.id !== selectedAuditIssue.id);
+      setAudited(updatedAudited);
+      
+      setShowAuditDetailModal(false);
+      setShowRemarksDialog(false);
+      setSelectedAuditIssue(null);
+    } catch (error) {
+      toast.error("Failed to reject audit issue");
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
   // ── Bulk delete ───────────────────────────────────────────────────────────
   const handleBulkDelete = () => {
     if (selectedIds.size === 0) return toast.error("No customers selected.");
@@ -889,7 +947,7 @@ export default function AccountPage() {
     });
   };
 
-  // ─── Render ────────────────────────────────────���──────────────────────────
+  // ─── Render ────────────────────────────────────���─────────��────────────────
   return (
     <ProtectedPageWrapper>
       <AppSidebar />
@@ -1028,93 +1086,28 @@ export default function AccountPage() {
 
           {/* ── Audit summary bar ── */}
           {isAuditView && (
-            <div className="mx-4 mb-2 mt-1 flex flex-col gap-2 bg-muted/50 rounded-md px-4 py-2 border border-border text-[13px]">
-              <div className="flex justify-between items-center flex-wrap gap-2">
-                <div
-                  className="font-medium cursor-pointer select-none underline text-red-600"
-                  onClick={() => {
-                    setAuditSelection({
-                      duplicates: true,
-                      missingType: true,
-                      missingStatus: true,
-                    });
-                    setShowAuditDialog(true);
-                  }}
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Audit Results</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {audited.length} issue{audited.length !== 1 ? "s" : ""} found
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAuditView(false)}
                 >
-                  🧾 Audit Summary:{" "}
-                  <span className="font-semibold text-red-600">
-                    {audited.length}
-                  </span>{" "}
-                  total issues found
-                </div>
-                <div className="flex flex-wrap gap-2 justify-end ml-auto">
-                  <ButtonGroup
-                    aria-label="Audit Filter Buttons"
-                    className="flex"
-                  >
-                    <Button
-                      size="sm"
-                      variant={
-                        auditFilter === "missingType" ? "secondary" : "outline"
-                      }
-                      className={`rounded-l-md ${auditFilter === "missingType" ? "bg-yellow-100 text-yellow-900" : ""}`}
-                      onClick={() =>
-                        setAuditFilter(
-                          auditFilter === "missingType" ? "" : "missingType"
-                        )
-                      }
-                    >
-                      ⚠ Missing Type:{" "}
-                      {
-                        audited.filter(
-                          (c) => !c.type_client?.trim() && c.status?.trim()
-                        ).length
-                      }
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={
-                        auditFilter === "missingStatus"
-                          ? "secondary"
-                          : "outline"
-                      }
-                      className={
-                        auditFilter === "missingStatus"
-                          ? "bg-yellow-100 text-yellow-900"
-                          : ""
-                      }
-                      onClick={() =>
-                        setAuditFilter(
-                          auditFilter === "missingStatus"
-                            ? ""
-                            : "missingStatus"
-                        )
-                      }
-                    >
-                      ⚠ Missing Status:{" "}
-                      {
-                        audited.filter(
-                          (c) => !c.status?.trim() && c.type_client?.trim()
-                        ).length
-                      }
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={
-                        auditFilter === "duplicates" ? "secondary" : "outline"
-                      }
-                      className={`rounded-r-md ${auditFilter === "duplicates" ? "bg-red-100 text-red-900" : ""}`}
-                      onClick={() =>
-                        setAuditFilter(
-                          auditFilter === "duplicates" ? "" : "duplicates"
-                        )
-                      }
-                    >
-                      🔁 Duplicates: {Array.from(duplicateIds).length}
-                    </Button>
-                  </ButtonGroup>
-                </div>
+                  Back to Database
+                </Button>
               </div>
+
+              <AuditTable
+                data={current}
+                duplicateDetails={duplicateDetails}
+                onRowClick={handleAuditRowClick}
+                loading={auditLoading}
+              />
             </div>
           )}
 
@@ -1135,6 +1128,33 @@ export default function AccountPage() {
             setAuditFilterAction={setAuditFilter}
             setCustomersAction={setCustomers}
             duplicateDetails={duplicateDetails}
+          />
+
+          <AuditDetailModal
+            open={showAuditDetailModal}
+            onOpenChange={setShowAuditDetailModal}
+            issue={selectedAuditIssue}
+            duplicateDetail={selectedAuditIssue ? duplicateDetails.get(selectedAuditIssue.id) : undefined}
+            onApprove={() => {
+              setAuditAction("approve");
+              setShowRemarksDialog(true);
+            }}
+            onReject={() => {
+              setAuditAction("reject");
+              setShowRemarksDialog(true);
+            }}
+            loading={auditLoading}
+          />
+
+          <AuditRemarksDialog
+            open={showRemarksDialog}
+            onOpenChange={setShowRemarksDialog}
+            action={auditAction}
+            onConfirm={
+              auditAction === "approve"
+                ? handleAuditApprove
+                : handleAuditReject
+            }
           />
 
           {/* ── Table ── */}
