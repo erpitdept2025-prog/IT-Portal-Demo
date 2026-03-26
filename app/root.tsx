@@ -5,24 +5,22 @@ import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Analytics } from "@vercel/analytics/next";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 // Popups
-import { UserProvider, useUser } from "@/contexts/UserContext";
+import { UserProvider } from "@/contexts/UserContext";
+import { FormatProvider } from "@/contexts/FormatContext";
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
-  const { userId } = useUser();
-
   return (
     <>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <Suspense fallback={null}>
-          {userId && (
-            <>
-            </>
-          )}
-        </Suspense>
-        <Analytics />
-        {children}
+        <SidebarProvider>
+          <Suspense fallback={null}>
+            <Analytics />
+            {children}
+          </Suspense>
+        </SidebarProvider>
       </ThemeProvider>
       <Toaster />
     </>
@@ -32,7 +30,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   return (
     <UserProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <FormatProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </FormatProvider>
     </UserProvider>
   );
 }

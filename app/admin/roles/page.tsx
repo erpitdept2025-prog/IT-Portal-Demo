@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
-  SidebarProvider,
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
@@ -79,8 +78,6 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 
-import { UserProvider } from "@/contexts/UserContext";
-import { FormatProvider } from "@/contexts/FormatContext";
 import ProtectedPageWrapper from "@/components/protected-page-wrapper";
 
 // ─── Status colours ────────────────────────────────────────────────────────────
@@ -813,12 +810,9 @@ export default function AccountPage() {
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <UserProvider>
-      <FormatProvider>
-        <ProtectedPageWrapper>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
+    <ProtectedPageWrapper>
+      <AppSidebar />
+      <SidebarInset>
               {/* Header */}
               <header className="flex h-16 items-center gap-2 px-4">
                 <SidebarTrigger className="-ml-1" />
@@ -1871,10 +1865,9 @@ export default function AccountPage() {
                   </div>
                 </div>
               </div>
-            </SidebarInset>
-          </SidebarProvider>
-
-          {/* ── User detail / preview dialog ── */}
+      </SidebarInset>
+      
+      {/* ── User detail / preview dialog ── */}
           {viewingUser &&
             (() => {
               const u = viewingUser;
@@ -2175,8 +2168,6 @@ export default function AccountPage() {
             onCancelAction={() => setShowDeleteDialog(false)}
             onConfirmAction={confirmDelete}
           />
-        </ProtectedPageWrapper>
-      </FormatProvider>
-    </UserProvider>
-  );
-}
+      </ProtectedPageWrapper>
+    );
+  }

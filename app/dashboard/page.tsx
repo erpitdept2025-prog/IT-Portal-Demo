@@ -1,31 +1,17 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react"
-import { useSearchParams } from "next/navigation";
+import { Suspense } from "react"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator, } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
-import { SidebarInset, SidebarProvider, SidebarTrigger, } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarTrigger, } from "@/components/ui/sidebar"
 import { SectionCards } from "@/components/dashboard/cards/section-cards"
 import { ChartAreaInteractive } from "@/components/dashboard/chart/progress"
 
-import { UserProvider, useUser } from "@/contexts/UserContext";
-import { FormatProvider } from "@/contexts/FormatContext";
 import ProtectedPageWrapper from "@/components/protected-page-wrapper";
 
 function DashboardContent() {
-  const searchParams = useSearchParams();
-  const { userId, setUserId } = useUser();
-  const queryUserId = searchParams?.get("id") ?? "";
-
-  // ✅ Load userId from localStorage after login
-  useEffect(() => {
-    if (queryUserId && queryUserId !== userId) {
-      setUserId(queryUserId);
-    }
-  }, [queryUserId, userId, setUserId]);
-
   return (
     <ProtectedPageWrapper>
       <AppSidebar />
@@ -71,14 +57,8 @@ function DashboardContent() {
 
 export default function Page() {
   return (
-    <UserProvider>
-      <FormatProvider>
-        <SidebarProvider>
-          <Suspense fallback={<div>Loading...</div>}>
-            <DashboardContent />
-          </Suspense>
-        </SidebarProvider>
-      </FormatProvider>
-    </UserProvider>
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
